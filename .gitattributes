@@ -1,0 +1,2 @@
+# Store text with LF in the repo, so diffs look the same on every OS
+* text=auto eol=lf
