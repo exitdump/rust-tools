@@ -1,0 +1,90 @@
+# Builds every tool for Windows, macOS and Linux.
+# Push a tag like `v0.2.0` to publish a GitHub Release with the downloads.
+# Running it by hand (workflow_dispatch) only builds, without releasing.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Build ${{ matrix.platform }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { platform: windows-x64, os: windows-latest, target: x86_64-pc-windows-msvc }
+          - { platform: macos-arm64, os: macos-latest, target: aarch64-apple-darwin }
+          - { platform: macos-x64, os: macos-latest, target: x86_64-apple-darwin }
+          # musl makes a static binary that runs on any Linux distro
+          - { platform: linux-x64, os: ubuntu-latest, target: x86_64-unknown-linux-musl }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - name: Install musl tools
+        if: contains(matrix.target, 'musl')
+        run: sudo apt-get update && sudo apt-get install -y musl-tools
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+
+      - name: Build
+        run: cargo build --release --locked --target ${{ matrix.target }}
+
+      # One archive per tool: <tool>-<platform>.zip / .tar.gz, holding the binary and LICENSE
+      - name: Package (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory dist | Out-Null
+          foreach ($tool in Get-ChildItem tools -Directory) {
+            $name = $tool.Name
+            Compress-Archive -Path "target/${{ matrix.target }}/release/$name.exe", LICENSE `
+              -DestinationPath "dist/$name-${{ matrix.platform }}.zip"
+          }
+          Get-ChildItem dist
+      - name: Package (macOS, Linux)
+        if: runner.os != 'Windows'
+        run: |
+          mkdir dist
+          for tool in tools/*/; do
+            name=$(basename "$tool")
+            stage=$(mktemp -d)
+            cp "target/${{ matrix.target }}/release/$name" LICENSE "$stage/"
+            tar -czf "dist/$name-${{ matrix.platform }}.tar.gz" -C "$stage" "$name" LICENSE
+          done
+          ls -l dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ matrix.platform }}
+          path: dist/*
+
+  release:
+    name: Publish release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: dist-*
+          path: dist
+          merge-multiple: true
+      - name: Checksums
+        run: cd dist && sha256sum * > SHA256SUMS.txt && cat SHA256SUMS.txt
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          generate_release_notes: true

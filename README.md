@@ -1,61 +1,83 @@
 # rust-tools
 
-Small command-line tools written in Rust. Each one is a single binary that runs on Linux, macOS and Windows.
+[![CI](https://github.com/exitdump/rust-tools/actions/workflows/ci.yml/badge.svg)](https://github.com/exitdump/rust-tools/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/exitdump/rust-tools)](https://github.com/exitdump/rust-tools/releases/latest)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
+Small, fast command-line tools written in Rust. Each tool is **one file**: no runtime, nothing else to install. They work on **Windows, macOS and Linux**.
+
+🌐 **Website:** https://exitdump.github.io/rust-tools/
 
 ## Tools
 
 | Tool | Like | What it does |
 |---|---|---|
-| [`meow`](tools/meow) | `cat` | Print files beautifully: rendered Markdown, highlighted code, colored logs |
+| [`meow`](tools/meow) | `cat` | Prints files beautifully: rendered Markdown, highlighted code, colored logs |
 
-## meow
+More tools are on the way. [Want to build one?](CONTRIBUTING.md)
 
-In a terminal, `meow` makes files easy to read:
+## Download
 
-- **Markdown** (`.md`) is rendered: colored headings, bullet lists, task lists, quotes, boxed tables and highlighted code blocks, wrapped to your terminal width.
-- **Code** gets syntax highlighting and line numbers (Rust, Python, JS, JSON, YAML, shell and many more).
-- **Text and logs** get line numbers, plus colors for `ERROR`/`WARN`/`INFO`, `TODO`, URLs, dates, numbers and quoted strings.
-- Each file gets a header with its name, type, line count and size. Binary files aren't dumped to the screen.
+Pick your system, unzip, and run. These links always point to the latest release.
 
-When piped (`meow file | grep x`), it prints plain bytes exactly like `cat`, so scripts keep working.
+| System | meow |
+|---|---|
+| Windows (x64) | [meow-windows-x64.zip](https://github.com/exitdump/rust-tools/releases/latest/download/meow-windows-x64.zip) |
+| macOS (Apple Silicon) | [meow-macos-arm64.tar.gz](https://github.com/exitdump/rust-tools/releases/latest/download/meow-macos-arm64.tar.gz) |
+| macOS (Intel) | [meow-macos-x64.tar.gz](https://github.com/exitdump/rust-tools/releases/latest/download/meow-macos-x64.tar.gz) |
+| Linux (x64) | [meow-linux-x64.tar.gz](https://github.com/exitdump/rust-tools/releases/latest/download/meow-linux-x64.tar.gz) |
 
-```sh
-meow README.md               # rendered Markdown
-meow src/main.rs app.log     # highlighted code, colored log
-meow -l json < data.txt      # choose the language yourself
-meow -p notes.md             # plain output, like cat
-meow -n -s file.txt          # classic cat flags still work (plain output)
+All files, plus `SHA256SUMS.txt` checksums, are on the [Releases page](https://github.com/exitdump/rust-tools/releases).
+
+## Install from the terminal
+
+Each example installs `meow`. For another tool, change the name.
+
+**Windows** (PowerShell):
+
+```powershell
+iwr https://github.com/exitdump/rust-tools/releases/latest/download/meow-windows-x64.zip -OutFile meow.zip
+Expand-Archive meow.zip -DestinationPath "$HOME\bin" -Force
+$p = [Environment]::GetEnvironmentVariable("Path", "User"); [Environment]::SetEnvironmentVariable("Path", "$p;$HOME\bin", "User")
 ```
 
-| Flag | What it does |
-|---|---|
-| `-p`, `--plain` | Plain output, like `cat` |
-| `--color auto\|always\|never` | When to use pretty output (`auto` respects `NO_COLOR`) |
-| `-l`, `--language` | Language instead of guessing: `md`, `rust`, `json`, … |
-| `--theme` | Code color theme (default `base16-ocean.dark`) |
-| `--width` | Output width (default: terminal width, up to 120) |
-| `-n`, `-b`, `-s`, `-E` | Classic `cat` flags: number lines, number non-blank, squeeze blanks, show ends |
+Then open a new terminal and run `meow --help`.
 
-## Install
+**macOS** (use `macos-x64` on Intel Macs):
+
+```sh
+curl -fsSL https://github.com/exitdump/rust-tools/releases/latest/download/meow-macos-arm64.tar.gz | tar xz meow
+sudo mv meow /usr/local/bin/
+```
+
+**Linux:**
+
+```sh
+curl -fsSL https://github.com/exitdump/rust-tools/releases/latest/download/meow-linux-x64.tar.gz | tar xz meow
+sudo mv meow /usr/local/bin/
+```
+
+**With Rust installed** (any system):
 
 ```sh
 cargo install --git https://github.com/exitdump/rust-tools meow
 ```
 
+> **macOS says the app can't be checked?** Files downloaded in a browser get a quarantine flag. Remove it with `xattr -d com.apple.quarantine meow`.
+
 ## Build from source
 
 ```sh
+git clone https://github.com/exitdump/rust-tools
+cd rust-tools
 cargo build --release   # binaries land in target/release/
 cargo test              # run every tool's tests
 ```
 
-## Layout
+## Contributing
 
-```
-common/        shared helpers (stdin handling, errors, broken pipes)
-tools/<name>/  one folder per tool
-```
+New tools, bug fixes and doc improvements are all welcome. [CONTRIBUTING.md](CONTRIBUTING.md) walks you through it step by step, even if it's your first Rust project.
 
 ## License
 
-MIT
+[MIT](LICENSE) © Jahid Hasan ([@exitdump](https://github.com/exitdump))
